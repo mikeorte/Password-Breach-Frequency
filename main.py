@@ -1,9 +1,9 @@
 import hashlib
 import requests
-import getpass
+import tkinter as tk
+from tkinter import messagebox
 
 def is_password_pwned(password):
-    """Check if the given password has been pwned using the HIBP API."""
     sha1_hash = hashlib.sha1(password.encode()).hexdigest().upper()
     prefix = sha1_hash[:5]
     suffix = sha1_hash[5:]
@@ -23,35 +23,42 @@ def is_password_pwned(password):
         return hash_dict.get(suffix, 0)
 
     except requests.RequestException as e:
-        print(f"An error occurred while connecting to the HIBP API: {e}")
+        messagebox.showerror("Error", f"An error occurred while connecting to the HIBP API: {e}")
         return -1
 
-def get_password_from_user():
-    """Prompt the user to enter a password securely."""
-    while True:
-        password = getpass.getpass("Enter password: ")
-        if password:
-            return password
-        else:
-            print("Password cannot be empty. Please try again.")
+def check_password():
+    password = password_entry.get()
+    if not password:
+        messagebox.showwarning("Input Error", "Password cannot be empty.")
+        return
 
-def main():
-    while True:
-        password = get_password_from_user()
+    pwned_count = is_password_pwned(password)
 
-        pwned_count = is_password_pwned(password)
+    if pwned_count == -1:
+        return
+    elif pwned_count > 0:
+        messagebox.showinfo("Result", f"Your password hash has appeared {pwned_count:,} times in known data breaches.")
+    else:
+        messagebox.showinfo("Result", "Your password hash has not appeared in a known data breach.")
 
-        if pwned_count == -1:
-            print("An error occurred during the check.")
-        elif pwned_count > 0:
-            print(f"Your password hash has appeared {pwned_count:,} times in known data breaches.")
-        else:
-            print("Your password hash has not appeared in a known data breach.")
+def create_gui():
+    root = tk.Tk()
+    root.title("Password Pwned Checker")
 
-        run_again = input("Do you want to check another password? (yes/no): ").strip().lower()
-        if run_again != 'yes':
-            print("Exiting the program. Stay safe!")
-            break
+    frame = tk.Frame(root, padx=10, pady=10)
+    frame.pack(padx=10, pady=10)
+
+    label = tk.Label(frame, text="Enter Password:")
+    label.grid(row=0, column=0, pady=5)
+
+    global password_entry
+    password_entry = tk.Entry(frame, show='*', width=30)
+    password_entry.grid(row=0, column=1, pady=5)
+
+    check_button = tk.Button(frame, text="Check Password", command=check_password)
+    check_button.grid(row=1, column=0, columnspan=2, pady=10)
+
+    root.mainloop()
 
 if __name__ == "__main__":
-    main()
+    create_gui()
